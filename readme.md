@@ -1,0 +1,168 @@
+# TinyMall
+
+
+
+本项目是一个简单的课程设计项目，实现一个电子购物平台的基础功能
+
+前端项目在`/myshop`下
+
+后端项目在`/TinyMall`下
+
+快速开始的docker部署方案在`/docker`下
+
+*若五个中间件及前后端工程均部署在一台主机，建议运存在2.5G以上*
+
+
+
+## 项目角色
+
+电子商务网站建设
+
+是一个集客户购物、下订单、订单处理、销售统计等功能于一体 的系统。通过浏览器，让客户可以查询货物，把货物放入购物车，创 建账户/ 登陆账户，创建订单，通过信用卡支付等。系统划分成了多个模块，松耦合的设计架构，允许可以和多个数据源EIS （企业信息系统）进行交互。功能如下：
+
+**1**．用户
+
+注册/登陆/ 忘记密码/管理个人信息
+
+查询货物（免登录）
+
+与客服助手交流（免登录）
+
+购物车管理
+
+提交订单、信用卡支付
+
+查询历史购物记录
+
+**2**．货物商店（类似于淘宝的中间商）
+
+接受/ 处理订单消息、手工接受 / 拒绝订单、用 **E-mail** 来通知客户、发订单给供应商、销售统计 
+
+**3**．供应商 
+
+接受订单、派送货物给用户、提供一个基于 **web** 的库存管理、维护库存数据库
+
+
+
+## 前置准备
+
+### 1.邮件准备
+
+项目中使用了邮件作为用户、平台和供货商通讯的载体，需要提前准备可发送邮件的邮箱
+
+我们使用qq邮箱，以下以qq邮箱为例简述配置步骤（开启 QQ 邮箱 SMTP 服务）：
+
+* 登录 QQ 邮箱 → 设置 → 账户
+* 找到 “POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV 服务”
+* 开启 “SMTP 服务”，按提示验证后获取**授权码**
+* 将授权码和邮箱信息写入yaml配置
+
+**<font color="red">*注：不同邮箱的配置文件内容不同，本项目中的配置模板仅可用于QQ邮箱*</font>**
+
+### 2.支付功能密钥
+
+支付是电商的基础功能之一，且大部分使用第三方平台；由于国内金融监管严格，第三方支付平台测试环境较难获取，我们使用国际目前最常用的 Stripe 支付网关为例进行部署。
+
+* 注册：访问 https://dashboard.stripe.com/register 并注册
+* 获取密钥：在测试沙盒中可以获取到测试密钥，本项目中支付逻辑较简化，仅使用私钥
+* 将私钥写入yaml配置
+
+***<font color="red">注：stripe支付功能有四美元的最低下限(约合人民币30元)，当支付金额少于这个数额时会出现支付失败，但前端未对失败进行处理，可能会出现支付成功，但刷新页面后订单变回未支付状态</font>***
+
+### 3.百炼平台密钥
+
+项目客服助手实现借助于百炼平台提供的模型
+
+* 访问https://bailian.console.aliyun.com/cn-beijing?spm=5176.12818093_47.resourceCenter.1.2fd916d0aa25O1&tab=model#/api-key
+* 登陆后获取API-key
+* 将API-key写入yaml配置
+
+### 4.前端
+
+前端使用node作为构建工具，版本号20.19.0
+
+### 5.后端
+
+后端基于Java JDK17开发，maven3.9.11
+
+### 6.其他中间件及数据库
+
+* mysql：8.0.27
+* redis：6.2.6（latest）
+* rabbitMQ：3.8-management
+* minio：RELEASE.2022-01-04T07-41-07Z（latest），创建桶`tinymall-bucket`
+* mongo：v8.2.6（latest）
+
+***<font color="red">注：以上中间件推荐使用docker部署</font>***
+
+### 7.本项目提供的docker部署方案
+
+* 运行docker compose文件部署容器
+
+  ~~~bash
+  docker compose up -d
+  ~~~
+
+* 在mysql容器中初始化数据库mall
+
+  ~~~bash
+  docker exec -i mysql mysql -uroot -p123456 -e "CREATE DATABASE mall DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  
+  docker exec -i mysql mysql -uroot -p123456 mall < mall.sql
+  ~~~
+
+* 登录http://your-IP:9001
+
+  输入账号admin、密码12345678，在minio控制台中创建桶tinymall-bucket，并将桶的读写权限（Access Policy）改为public
+
+* 向rabbitmq容器中添加并激活延迟插件
+
+  ~~~bash
+  docker cp ./rabbitmq_delayed_message_exchange-3.8.17.8f537ac.ez rabbitmq:/plugins/
+  
+  docker exec -it rabbitmq rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+  ~~~
+
+
+
+## 项目部署
+
+* 前端：使用node作为构建工具，在index.html目录下运行
+
+  ```bash
+  npm install
+  npm run dev
+  ```
+
+* 后端：
+
+  * <font color="red">**注意修改yaml配置为你的环境**</font>
+  * 推荐使用IDE调试；或在pom.xml目录下运行
+
+  ~~~bash
+  mvn install
+  mvn spring-boot:run
+  ~~~
+
+
+
+## 访问
+
+* 访问http://localhost:3000，会默认进入用户首页，可查看商品、与客服助手交流
+
+* 运行时访问 http://localhost:8080/doc.html#/home 可查看项目接口文档
+
+* 用户首页最右下角点击会出现隐藏输入框，输入密钥admin可快速进入货物商店或供应商管理界面（无需登录）
+
+* 运行时访问 http://localhost:3000/middle ，可进入货物商店管理界面（无需登录）
+
+* 运行时访问 http://localhost:3000/supplier/1 ，可进入供应商管理界面（无需登录）
+
+  *最后的1表示供应商的id，必须先由货物商店添加，数据库中存在有效信息时才能被访问*
+
+
+
+## Summary
+
+本课程设计开发时间较短，接口基于RestFul API设计，但也有诸多不合理的地方，部分功能存在缺陷。
+
