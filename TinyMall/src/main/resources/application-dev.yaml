@@ -1,0 +1,33 @@
+environment:
+  ip: xx.xx.xx.xx
+
+spring:
+  application:
+    name: TinyMall
+  # mysql配置
+  datasource:
+    url: jdbc:mysql://${environment.ip}:3306/mall?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+  data:
+    # redis配置
+    redis:
+      host: ${environment.ip}
+      port: 6379
+    # mongodb配置
+    mongodb:
+      uri: mongodb://admin:123456@${environment.ip}:27017/TinyMall_Comment?authSource=admin
+  # RabbitMQ配置
+  rabbitmq:
+    host: ${environment.ip}
+    port: 5672
+    username: admin   #账号
+    password: 123456  #密码
+  # MinIO配置
+  minio:
+    endpoint: http://${environment.ip}
+    access-key: admin # 账号
+    secret-key: 12345678 # 密码
+    bucket-name: tinymall-bucket
+    secure: false
